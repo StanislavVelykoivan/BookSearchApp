@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Book Search</string>
+    <string name="error_disk_full">Storage is full. Please free up some space.</string>
+    <string name="error_unknow">An unknown error occurred.</string>
+    <string name="error_request_timeout">The request timed out. Please try again later.</string>
+    <string name="error_too_many_requests">Too many requests. Please try again later.</string>
+    <string name="error_no_internet">No internet connection. Please check your network settings.</string>
+    <string name="error_serialization">Failed to process data.</string>
+</resources>
