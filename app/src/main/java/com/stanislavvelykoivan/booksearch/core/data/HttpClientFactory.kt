@@ -8,7 +8,9 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.accept
 import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -23,8 +25,8 @@ object HttpClientFactory {
                 )
             }
             install(HttpTimeout){
-                socketTimeoutMillis = 60_000L
-                requestTimeoutMillis = 60_000L
+                socketTimeoutMillis = 120_000L
+                requestTimeoutMillis = 120_000L
             }
             install(Logging) {
                 logger = object : Logger {
@@ -34,7 +36,10 @@ object HttpClientFactory {
                 }
                 level = LogLevel.ALL
             }
-            defaultRequest { ContentType.Application.Json }
+            defaultRequest {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+            }
         }
     }
 }

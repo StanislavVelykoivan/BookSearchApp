@@ -43,6 +43,9 @@ android {
 }
 
 dependencies {
+    //Icons
+    implementation(libs.androidx.compose.material.icons.extended)
+
 //Koin
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
@@ -75,6 +78,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

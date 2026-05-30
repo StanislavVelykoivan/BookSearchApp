@@ -4,22 +4,36 @@ import com.stanislavvelykoivan.booksearch.core.domain.DataError
 import com.stanislavvelykoivan.booksearch.core.domain.Result
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.ResponseValidator
 import io.ktor.client.statement.HttpResponse
 import io.ktor.util.network.UnresolvedAddressException
+import io.ktor.utils.io.CancellationException
 import kotlinx.coroutines.ensureActive
+import java.net.UnknownHostException
 import kotlin.coroutines.coroutineContext
 
 suspend inline fun <reified T> safeCall(
     execute: () -> HttpResponse
-): Result<T, DataError.Remote>{
+): Result<T, DataError.Remote> {
     val response = try {
         execute()
-    }catch (e: SocketTimeoutException){
+    }
+    catch (e: HttpRequestTimeoutException) {
         return Result.Error(DataError.Remote.REQUEST_TIMEOUT)
-    }catch (e: UnresolvedAddressException){
+    } catch (e: ConnectTimeoutException) {
+        return Result.Error(DataError.Remote.REQUEST_TIMEOUT)
+    } catch (e: SocketTimeoutException) {
+        return Result.Error(DataError.Remote.REQUEST_TIMEOUT)
+    } catch (e: UnresolvedAddressException) {
         return Result.Error(DataError.Remote.NO_INTERNET)
-    }catch (e: Exception){
+    } catch (e: UnknownHostException) {
+        return Result.Error(DataError.Remote.NO_INTERNET)
+    } catch (e: Exception) {
+        if (e is CancellationException) throw e
+
         coroutineContext.ensureActive()
         return Result.Error(DataError.Remote.UNKNOWN)
     }
@@ -41,6 +55,7 @@ suspend inline fun <reified T> respondToResult(
 
         408 -> Result.Error(DataError.Remote.REQUEST_TIMEOUT)
         429 -> Result.Error(DataError.Remote.TOO_MANY_REQUESTS)
+        503 -> Result.Error(DataError.Remote.SERVICE_UNAVAILABLE)
         in 500..599 -> Result.Error(DataError.Remote.SERVER)
         else -> Result.Error(DataError.Remote.UNKNOWN)
     }

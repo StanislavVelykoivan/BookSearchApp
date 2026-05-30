@@ -1,9 +1,22 @@
 <resources>
     <string name="app_name">Book Search</string>
+
     <string name="error_disk_full">Storage is full. Please free up some space.</string>
     <string name="error_unknow">An unknown error occurred.</string>
     <string name="error_request_timeout">The request timed out. Please try again later.</string>
     <string name="error_too_many_requests">Too many requests. Please try again later.</string>
     <string name="error_no_internet">No internet connection. Please check your network settings.</string>
     <string name="error_serialization">Failed to process data.</string>
+    <string name="error_service_unavailable">Service is currently unavailable. Please try again later.</string>
+
+    <string name="search_hint">Search…</string>
+    <string name="close_hint">Clear search</string>
+    <string name="filter_title">Choose languages</string>
+
+    <string name="search_tab_title">Search Results</string>
+    <string name="saved_tab_title">Saved Books</string>
+
+    <string name="no_search_results">No results</string>
+    <string name="error_server_inner" >Something went wrong on the server</string>
+
 </resources>

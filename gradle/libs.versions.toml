@@ -1,6 +1,7 @@
 [versions]
 agp = "9.1.1"
 coilCompose = "3.4.0"
+coilNetworkKtor = "3.4.0"
 coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -14,6 +15,7 @@ lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.13.0"
 kotlin = "2.2.10"
 composeBom = "2024.09.00"
+materialIconsExtended = "1.7.8"
 navigationCompose = "2.9.8"
 navigationDynamicFeaturesFragment = "2.9.8"
 navigationTesting = "2.9.8"
@@ -22,6 +24,7 @@ sqlite = "2.6.2"
 ksp = "2.3.4"
 
 [libraries]
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "navigationCompose" }
 androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "navigationCompose" }
@@ -30,6 +33,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilNetworkKtor" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinVersion" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinVersion" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientCore" }
