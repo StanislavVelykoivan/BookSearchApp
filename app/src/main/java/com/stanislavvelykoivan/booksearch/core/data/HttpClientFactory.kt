@@ -2,6 +2,7 @@ package com.stanislavvelykoivan.booksearch.core.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpRedirect
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -36,9 +37,9 @@ object HttpClientFactory {
                 }
                 level = LogLevel.ALL
             }
-            defaultRequest {
-                contentType(ContentType.Application.Json)
-                accept(ContentType.Application.Json)
+            install(HttpRedirect) {
+                checkHttpMethod = false
+                allowHttpsDowngrade = true
             }
         }
     }

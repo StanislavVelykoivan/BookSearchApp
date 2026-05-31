@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +24,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.stanislavvelykoivan.booksearch.R
-import com.stanislavvelykoivan.booksearch.book.presentation.book_detail.components.Chip
 import com.stanislavvelykoivan.booksearch.book.presentation.book_detail.components.TagList
 import com.stanislavvelykoivan.booksearch.book.presentation.book_detail.components.Titled
 import com.stanislavvelykoivan.booksearch.core.presentation.OnBackground
@@ -91,10 +88,21 @@ fun BookDetailScreen(
             }
 
             state.error != null -> {
-                Text(
-                    text = "Error: ${state.error.asString()}",
-                    color = MaterialTheme.colorScheme.error
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Error: ${state.error.asString()}",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Button(onClick = { onAction(BookDetailAction.OnRetryClick) }) {
+                        Text("Retry")
+                    }
+                }
             }
 
             state.book != null -> {
@@ -186,28 +194,35 @@ fun BookDetailScreen(
                         )
                     }
 
+                    if (state.book.formats.isNotEmpty()) {
+                        TagList(
+                            title = "Formats",
+                            items = state.book.formats.map { it.key }
+                        )
+                    }
+
                     Text(text = "Download count: ${state.book.downloadCount}")
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (!state.isBookSaved) {
-                        Button(
-                            onClick = { showBottomSheet = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Tertiary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Download"
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "Download Book")
-                        }
+
+                    Button(
+                        onClick = { showBottomSheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Tertiary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Save"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Save Book")
                     }
+
 
 
 
@@ -217,18 +232,23 @@ fun BookDetailScreen(
                             sheetState = sheetState
                         ) {
 
-                            Column(modifier = Modifier
-                                .padding(16.dp)
-                                .navigationBarsPadding()) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .navigationBarsPadding()
+                            ) {
                                 Text("Choose formate:", style = MaterialTheme.typography.titleLarge)
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 state.book.formats.forEach { (label, url) ->
+                                    if (label == "image/jpeg")
+                                        return@forEach
+
                                     ListItem(
                                         headlineContent = { Text(label) },
                                         leadingContent = { Icon(Icons.Default.FileDownload, null) },
                                         modifier = Modifier.clickable {
-//                                            onAction(BookDetailAction.DownloadFile(url))
+                                            onAction(BookDetailAction.DownloadFormat(label, url))
                                             showBottomSheet = false
                                         }
                                     )

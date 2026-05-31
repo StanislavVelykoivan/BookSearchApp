@@ -6,8 +6,12 @@ import com.stanislavvelykoivan.booksearch.core.data.safeCall
 import com.stanislavvelykoivan.booksearch.core.domain.DataError
 import com.stanislavvelykoivan.booksearch.core.domain.Result
 import io.ktor.client.HttpClient
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.prepareGet
+import io.ktor.http.ContentType
+import io.ktor.utils.io.ByteReadChannel
 
 private const val BASE_URL = "https://gutendex.com"
 
@@ -24,6 +28,7 @@ class KtorRemoteBookDataSource(
             httpClient.get(
                 "$BASE_URL/books"
             ) {
+                accept(ContentType.Application.Json)
                 parameter("search", query)
                 if (!languages.isNullOrEmpty()) {
                     parameter("languages", languages.joinToString(","))
@@ -37,9 +42,17 @@ class KtorRemoteBookDataSource(
         return safeCall<BookSearchDto> {
             httpClient.get(
                 "$BASE_URL/books/$bookId"
-            )
+            ){
+                accept(ContentType.Application.Json)
+            }
         }
     }
 
+    override suspend fun downloadBookChannel(url: String): Result<ByteReadChannel, DataError.Remote> {
+        return safeCall<ByteReadChannel> {
+            val response = httpClient.prepareGet(url).execute()
+            response
+        }
+    }
 
 }

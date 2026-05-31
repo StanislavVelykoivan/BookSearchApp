@@ -10,6 +10,5 @@ data class Book(
     val bookshelves: List<String>,
     val downloadCount: Int,
     val coverUrl: String?,
-    val formats: Map<String, String>,
-    val localFilePath: String? = null
+    val formats: Map<String, String>
 )

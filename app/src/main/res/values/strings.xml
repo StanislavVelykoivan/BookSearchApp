@@ -18,5 +18,6 @@
 
     <string name="no_search_results">No results</string>
     <string name="error_server_inner" >Something went wrong on the server</string>
+    <string name="no_saved_books" />
 
 </resources>

@@ -89,9 +89,11 @@ fun BookSearchScreen(
     LaunchedEffect(state.searchResult) {
         searchResultListState.animateScrollToItem(0)
     }
-
     LaunchedEffect(state.onTabSelected) {
         pagerState.animateScrollToPage(state.onTabSelected)
+    }
+    LaunchedEffect(pagerState.currentPage) {
+        onAction(BookSearchAction.OnTabSelected(pagerState.currentPage))
     }
 
     Column(
@@ -195,12 +197,12 @@ fun BookSearchScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        when (page){
+                        when (page) {
                             0 -> {
-                                if (state.isLoading){
+                                if (state.isLoading) {
                                     CircularProgressIndicator()
-                                }else{
-                                    when{
+                                } else {
+                                    when {
                                         state.error != null -> {
                                             Text(
                                                 text = state.error.asString(),
@@ -209,6 +211,7 @@ fun BookSearchScreen(
                                                 color = MaterialTheme.colorScheme.error
                                             )
                                         }
+
                                         state.searchResult.isEmpty() -> {
                                             Text(
                                                 text = stringResource(R.string.no_search_results),
@@ -216,10 +219,17 @@ fun BookSearchScreen(
                                                 style = MaterialTheme.typography.headlineMedium
                                             )
                                         }
-                                        else ->{
+
+                                        else -> {
                                             BookList(
                                                 books = state.searchResult,
-                                                onBookClick = { onAction(BookSearchAction.OnBookClick(it.id)) },
+                                                onBookClick = {
+                                                    onAction(
+                                                        BookSearchAction.OnBookClick(
+                                                            it.id
+                                                        )
+                                                    )
+                                                },
                                                 scrollState = searchResultListState
                                             )
                                         }
@@ -228,8 +238,21 @@ fun BookSearchScreen(
                                 }
 
                             }
-                            1 -> {
 
+                            1 -> {
+                                if (state.savedBooks.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.no_saved_books),
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.headlineMedium
+                                    )
+                                } else {
+                                    BookList(
+                                        books = state.savedBooks,
+                                        onBookClick = { onAction(BookSearchAction.OnBookClick(it.id)) },
+                                        scrollState = savedBooksListState
+                                    )
+                                }
                             }
                         }
                     }

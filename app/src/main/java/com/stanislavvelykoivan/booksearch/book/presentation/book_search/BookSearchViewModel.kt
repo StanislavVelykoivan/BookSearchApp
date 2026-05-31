@@ -21,6 +21,9 @@ class BookSearchViewModel(
 
     private var searchJob: Job? = null
 
+    init {
+        observeSavedBooks()
+    }
     fun onAction(action: BookSearchAction) {
         when (action) {
             is BookSearchAction.OnQueryChange -> {
@@ -85,6 +88,14 @@ class BookSearchViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    private fun observeSavedBooks() {
+        viewModelScope.launch {
+            bookRepository.getSavedBooks().collect { savedBooks ->
+                _state.update { it.copy(savedBooks = savedBooks) }
+            }
         }
     }
 }

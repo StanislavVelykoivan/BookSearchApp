@@ -92,8 +92,7 @@ fun BookItemPreview() {
         bookshelves = listOf("Classic"),
         downloadCount = 1250,
         coverUrl = null,
-        formats = emptyMap(),
-        localFilePath = null
+        formats = emptyMap()
     )
 
 

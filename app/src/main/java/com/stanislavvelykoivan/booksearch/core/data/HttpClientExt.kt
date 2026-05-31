@@ -2,18 +2,17 @@ package com.stanislavvelykoivan.booksearch.core.data
 
 import com.stanislavvelykoivan.booksearch.core.domain.DataError
 import com.stanislavvelykoivan.booksearch.core.domain.Result
-import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.plugins.ResponseValidator
 import io.ktor.client.statement.HttpResponse
 import io.ktor.util.network.UnresolvedAddressException
 import io.ktor.utils.io.CancellationException
 import kotlinx.coroutines.ensureActive
 import java.net.UnknownHostException
 import kotlin.coroutines.coroutineContext
+import kotlin.reflect.typeOf
 
 suspend inline fun <reified T> safeCall(
     execute: () -> HttpResponse
@@ -45,14 +44,17 @@ suspend inline fun <reified T> respondToResult(
     response: HttpResponse
 ): Result<T, DataError.Remote> {
     return when (response.status.value) {
-        in 200..209 -> {
+        in 200..299 -> {
             try {
-                Result.Success(response.body<T>())
-            } catch (e: NoTransformationFoundException) {
+                if (typeOf<T>() == typeOf<Unit>()) {
+                    Result.Success(Unit as T)
+                } else {
+                    Result.Success(response.body<T>())
+                }
+            } catch (e: Exception) {
                 Result.Error(DataError.Remote.SERIALIZATION)
             }
         }
-
         408 -> Result.Error(DataError.Remote.REQUEST_TIMEOUT)
         429 -> Result.Error(DataError.Remote.TOO_MANY_REQUESTS)
         503 -> Result.Error(DataError.Remote.SERVICE_UNAVAILABLE)

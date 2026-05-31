@@ -9,4 +9,14 @@ interface BookRepository {
     suspend fun getBookById(bookId: Long): Result<Book, DataError.Remote>
     fun isBookSaved(bookId: Long): Flow<Boolean>
 
+    suspend fun saveBookToDatabase(book: Book)
+
+    fun getSavedBooks(): Flow<List<Book>>
+    suspend fun downloadFormat(
+        bookId: Long,
+        formatMimeType: String,
+        url: String
+    ): Result<String, DataError>
+
+    suspend fun getBookFromDatabase(bookId: Long): Book?
 }
