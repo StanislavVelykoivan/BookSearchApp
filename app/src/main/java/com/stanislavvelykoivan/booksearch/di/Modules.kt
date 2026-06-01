@@ -8,6 +8,7 @@ import com.stanislavvelykoivan.booksearch.book.data.network.KtorRemoteBookDataSo
 import com.stanislavvelykoivan.booksearch.book.data.network.RemoteBookDataSource
 import com.stanislavvelykoivan.booksearch.book.data.repository.DefaultBookRepository
 import com.stanislavvelykoivan.booksearch.book.domain.BookRepository
+import com.stanislavvelykoivan.booksearch.book.domain.DeleteBookUseCase
 import com.stanislavvelykoivan.booksearch.book.domain.DownloadBookUseCase
 import com.stanislavvelykoivan.booksearch.book.presentation.book_detail.BookDetailViewModel
 import com.stanislavvelykoivan.booksearch.book.presentation.book_search.BookSearchViewModel
@@ -36,15 +37,14 @@ val appModule = module {
         ).build()
     }
 
-
     single { get<BookDatabase>().bookDao() }
-    single { get<BookDatabase>().authorDao() }
-
+    single { get<BookDatabase>().searchDao() }
 
     singleOf(::FileStorageManager).bind<FileStorage>()
     singleOf(::KtorRemoteBookDataSource).bind<RemoteBookDataSource>()
     singleOf(::DefaultBookRepository).bind<BookRepository>()
     singleOf(::DownloadBookUseCase)
+    singleOf(::DeleteBookUseCase)
 
     viewModelOf(::BookSearchViewModel)
     viewModelOf(::BookDetailViewModel)

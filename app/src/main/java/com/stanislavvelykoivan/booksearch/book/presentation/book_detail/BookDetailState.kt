@@ -1,6 +1,7 @@
 package com.stanislavvelykoivan.booksearch.book.presentation.book_detail
 
 import com.stanislavvelykoivan.booksearch.book.domain.Book
+import com.stanislavvelykoivan.booksearch.book.domain.BookFile
 import com.stanislavvelykoivan.booksearch.core.presentation.UiText
 
 data class BookDetailState(
@@ -8,6 +9,6 @@ data class BookDetailState(
     val isDownloading: Boolean = false,
     val isLoading: Boolean = false,
     val error: UiText? = null,
-    val fileSize: String? = null,
+    val files: List<BookFile> = emptyList(),
     val isBookSaved: Boolean = false
 )

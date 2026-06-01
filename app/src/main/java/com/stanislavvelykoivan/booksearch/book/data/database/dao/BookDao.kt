@@ -51,4 +51,24 @@ interface BookDao {
             insertCrossRef(crossRefs)
         }
     }
+
+    @Query("DELETE FROM books WHERE bookId = :bookId")
+    suspend fun deleteBookById(bookId: Long)
+
+    @Query("""
+        DELETE FROM authors 
+        WHERE authorId IN (
+            SELECT a.authorId 
+            FROM authors a
+            LEFT JOIN book_author_cross_ref ref ON a.authorId = ref.authorId
+            WHERE ref.bookId IS NULL
+        )
+    """)
+    suspend fun deleteUnusedAuthors()
+
+    @Transaction
+    suspend fun deleteBookAndCleanup(bookId: Long) {
+        deleteBookById(bookId)
+        deleteUnusedAuthors()
+    }
 }

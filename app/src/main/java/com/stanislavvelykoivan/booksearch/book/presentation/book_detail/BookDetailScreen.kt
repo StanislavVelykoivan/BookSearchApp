@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.Button
@@ -37,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -178,7 +180,9 @@ fun BookDetailScreen(
                     if (state.book.languages.isNotEmpty()) {
                         TagList(
                             title = "Languages",
-                            items = state.book.languages.map { it.uppercase() })
+                            items = state.book.languages,
+                            itemToText = { it.uppercase() }
+                        )
                     }
 
 
@@ -201,12 +205,25 @@ fun BookDetailScreen(
                         )
                     }
 
+                    if (state.files.isNotEmpty()) {
+                        TagList(
+                            title = "Downloaded files",
+                            items = state.files,
+                            itemToText = { "${it.name} ${it.size}" },
+                            onItemClick = { bookFile ->
+                                onAction(BookDetailAction.OpenFile(bookFile.file))
+                            }
+                        )
+                    }
+
                     Text(text = "Download count: ${state.book.downloadCount}")
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+
                     Button(
                         onClick = { showBottomSheet = true },
+                        enabled = !state.isDownloading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
@@ -223,6 +240,24 @@ fun BookDetailScreen(
                         Text(text = "Save Book")
                     }
 
+
+                    if (state.isBookSaved) {
+                        Button(
+                            onClick = { onAction(BookDetailAction.OnDeleteClick) },
+                            enabled = !state.isDownloading,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red.copy(alpha = 0.8f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Delete Book")
+                        }
+                    }
 
 
 

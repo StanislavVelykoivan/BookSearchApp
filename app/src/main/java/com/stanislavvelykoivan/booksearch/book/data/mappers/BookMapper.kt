@@ -3,6 +3,7 @@ package com.stanislavvelykoivan.booksearch.book.data.mappers
 import com.stanislavvelykoivan.booksearch.book.data.database.BookWithAuthors
 import com.stanislavvelykoivan.booksearch.book.data.database.entitys.AuthorEntity
 import com.stanislavvelykoivan.booksearch.book.data.database.entitys.BookEntity
+import com.stanislavvelykoivan.booksearch.book.data.database.entitys.SearchHistoryEntity
 import com.stanislavvelykoivan.booksearch.book.data.dto.BookSearchDto
 import com.stanislavvelykoivan.booksearch.book.data.dto.PersonDto
 import com.stanislavvelykoivan.booksearch.book.domain.Author
@@ -73,3 +74,11 @@ fun BookWithAuthors.toBook(): Book {
         formats = book.formats
     )
 }
+
+
+fun SearchHistoryEntity.toDomain(): String = this.searchQuery
+
+fun String.toEntity(): SearchHistoryEntity = SearchHistoryEntity(
+    searchQuery = this,
+    lastSearchedAt = System.currentTimeMillis()
+)

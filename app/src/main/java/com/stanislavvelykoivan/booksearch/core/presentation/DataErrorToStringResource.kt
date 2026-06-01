@@ -6,6 +6,7 @@ import com.stanislavvelykoivan.booksearch.core.domain.DataError
 
 fun DataError.toUiText(): UiText {
     val stringRes = when (this) {
+        DataError.Local.NO_APP_TO_OPEN_FILE -> R.string.error_no_app_to_open_file
         DataError.Local.DISK_FULL -> R.string.error_disk_full
         DataError.Local.UNKNOWN -> R.string.error_unknow
         DataError.Remote.REQUEST_TIMEOUT -> R.string.error_request_timeout

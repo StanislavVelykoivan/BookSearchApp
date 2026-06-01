@@ -12,10 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TagList(
+fun <T> TagList(
     title: String,
-    items: List<String>,
-    modifier: Modifier = Modifier
+    items: List<T>,
+    modifier: Modifier = Modifier,
+    itemToText: (T) -> String = { it.toString() },
+    onItemClick: ((T) -> Unit)? = null
 ) {
     if (items.isNotEmpty()) {
         Titled(
@@ -28,9 +30,11 @@ fun TagList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items.forEach { item ->
-                    Chip {
+                    Chip(
+                        onClick = onItemClick?.let { { it(item) } }
+                    ) {
                         Text(
-                            text = item,
+                            text = itemToText(item),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }

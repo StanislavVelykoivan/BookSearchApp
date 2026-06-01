@@ -23,6 +23,7 @@ class BookSearchViewModel(
 
     init {
         observeSavedBooks()
+        observeSearchHistory()
     }
     fun onAction(action: BookSearchAction) {
         when (action) {
@@ -69,6 +70,10 @@ class BookSearchViewModel(
         searchJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
+            launch {
+                bookRepository.saveSearchQuery(trimmedQuery)
+            }
+
             bookRepository.searchBooks(trimmedQuery, languages, page)
                 .onSuccess { searchResult ->
                     _state.update {
@@ -95,6 +100,14 @@ class BookSearchViewModel(
         viewModelScope.launch {
             bookRepository.getSavedBooks().collect { savedBooks ->
                 _state.update { it.copy(savedBooks = savedBooks) }
+            }
+        }
+    }
+
+    private fun observeSearchHistory() {
+        viewModelScope.launch {
+            bookRepository.getLastSearchQuery().collect { history ->
+                _state.update { it.copy(searchHistory = history) }
             }
         }
     }

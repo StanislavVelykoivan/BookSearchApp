@@ -114,8 +114,14 @@ fun BookSearchScreen(
 
             BookSearchBar(
                 query = state.query,
-                onQueryChange = { onAction(BookSearchAction.OnQueryChange(it)) },
-                onSearch = { onAction(BookSearchAction.OnSearchClick) },
+                searchHistory = state.searchHistory,
+                onQueryChange = {
+                    onAction(BookSearchAction.OnQueryChange(it))
+                },
+                onSearch = { query ->
+                    onAction(BookSearchAction.OnQueryChange(query))
+                    onAction(BookSearchAction.OnSearchClick)
+                },
                 modifier = Modifier.weight(1f)
             )
 

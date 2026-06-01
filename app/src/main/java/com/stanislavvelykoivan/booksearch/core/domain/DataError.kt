@@ -12,6 +12,7 @@ sealed interface DataError: Error {
     }
     enum class Local: DataError{
         DISK_FULL,
+        NO_APP_TO_OPEN_FILE,
         UNKNOWN
     }
 }

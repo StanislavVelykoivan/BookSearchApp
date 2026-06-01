@@ -6,6 +6,7 @@ import com.stanislavvelykoivan.booksearch.core.presentation.UiText
 data class BookSearchState (
     val query: String = "tolstoy",
     val searchResult: List<Book> = emptyList(),
+    val searchHistory: List<String> = emptyList(),
     val savedBooks: List<Book> = emptyList(),
     val isLoading: Boolean = false,
     val error: UiText? = null,

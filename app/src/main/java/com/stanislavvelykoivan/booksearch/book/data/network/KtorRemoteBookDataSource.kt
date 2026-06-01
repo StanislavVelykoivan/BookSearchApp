@@ -10,7 +10,9 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 
 private const val BASE_URL = "https://gutendex.com"
@@ -48,10 +50,24 @@ class KtorRemoteBookDataSource(
         }
     }
 
-    override suspend fun downloadBookChannel(url: String): Result<ByteReadChannel, DataError.Remote> {
-        return safeCall<ByteReadChannel> {
-            val response = httpClient.prepareGet(url).execute()
-            response
+
+
+    override suspend fun downloadStreaming(
+        url: String,
+        onChannelReady: suspend (ByteReadChannel) -> Result<Unit, DataError.Local>
+    ): Result<Unit, DataError> {
+        return try {
+            httpClient.prepareGet(url).execute { response ->
+                if (!response.status.isSuccess()) {
+                    return@execute Result.Error(DataError.Remote.UNKNOWN)
+                }
+
+                val channel = response.bodyAsChannel()
+
+                onChannelReady(channel)
+            }
+        } catch (e: Exception) {
+            Result.Error(DataError.Remote.UNKNOWN)
         }
     }
 

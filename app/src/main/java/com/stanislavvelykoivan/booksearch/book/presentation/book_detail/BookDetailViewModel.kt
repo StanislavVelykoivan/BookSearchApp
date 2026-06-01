@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stanislavvelykoivan.booksearch.book.domain.BookRepository
+import com.stanislavvelykoivan.booksearch.book.domain.DeleteBookUseCase
 import com.stanislavvelykoivan.booksearch.book.domain.DownloadBookUseCase
 import com.stanislavvelykoivan.booksearch.core.domain.onError
 import com.stanislavvelykoivan.booksearch.core.domain.onSuccess
@@ -12,11 +13,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 
 class BookDetailViewModel(
     private val bookRepository: BookRepository,
     private val downloadBookUseCase: DownloadBookUseCase,
+    private val deleteBookUseCase: DeleteBookUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookDetailState())
@@ -25,16 +26,7 @@ class BookDetailViewModel(
     init {
         val bookId = savedStateHandle.get<Long>("bookId")
         if (bookId != null) {
-            viewModelScope.launch {
-
-                val savedBook = bookRepository.getBookFromDatabase(bookId)
-
-                if (savedBook != null) {
-                    _state.update { it.copy(book = savedBook, isLoading = false, isBookSaved = true) }
-                } else {
-                    loadBookFromNetwork(bookId)
-                }
-            }
+            loadBook(bookId)
         }
     }
 
@@ -54,32 +46,75 @@ class BookDetailViewModel(
                     val result = downloadBookUseCase(book, action.formatMimeType, action.url)
 
                     result.onSuccess {
-                        _state.update { it.copy(isDownloading = false) }
+                        val getBookFiles = bookRepository.getBookFiles(book.id)
+                        _state.update { it.copy(isDownloading = false, files = getBookFiles, isBookSaved = true) }
                     }.onError { error ->
                         _state.update { it.copy(isDownloading = false, error = error.toUiText()) }
                     }
                 }
             }
+
+            is BookDetailAction.OpenFile -> {
+                viewModelScope.launch {
+                    bookRepository.openFile(action.file)
+                }
+            }
+
             is BookDetailAction.OnSaveClick -> {
 
             }
 
             is BookDetailAction.OnDeleteClick -> {
+                val book = _state.value.book ?: return
 
+                viewModelScope.launch {
+                    _state.update { it.copy(isLoading = true) }
+
+                    deleteBookUseCase(book.id)
+                        .onSuccess {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    isBookSaved = false,
+                                    files = emptyList()
+                                )
+                            }
+                        }
+                        .onError { error ->
+                            _state.update { it.copy(isLoading = false, error = error.toUiText()) }
+                        }
+                }
             }
 
             is BookDetailAction.OnRetryClick -> {
-                viewModelScope.launch {
-                    val bookId = _state.value.book?.id ?: return@launch
-
-                    val cachedBook = bookRepository.getBookFromDatabase(bookId)
-
-                    if (cachedBook != null) {
-                        _state.update { it.copy(book = cachedBook, error = null) }
-                    } else {
-                        loadBookFromNetwork(bookId)
-                    }
+                _state.value.book?.id?.let { bookId ->
+                    loadBook(bookId)
                 }
+            }
+        }
+    }
+
+    private fun loadBook(bookId: Long) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            val cachedBook = bookRepository.getBookFromDatabase(bookId)
+
+            if (cachedBook != null) {
+                val getBookFiles = bookRepository.getBookFiles(bookId)
+
+
+                _state.update {
+                    it.copy(
+                        book = cachedBook,
+                        files = getBookFiles,
+                        isLoading = false,
+                        isBookSaved = true,
+                        error = null
+                    )
+                }
+            } else {
+                loadBookFromNetwork(bookId)
             }
         }
     }
