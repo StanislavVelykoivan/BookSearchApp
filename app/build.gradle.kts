@@ -43,6 +43,12 @@ android {
 }
 
 dependencies {
+
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.truth)
+
     //Icons
     implementation(libs.androidx.compose.material.icons.extended)
 
@@ -79,6 +85,7 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.ktor)
+
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -18,7 +18,7 @@
 
     <string name="no_search_results">No results</string>
     <string name="error_server_inner" >Something went wrong on the server</string>
-    <string name="no_saved_books" />
-    <string name="error_no_app_to_open_file" />
+    <string name="no_saved_books">You haven’t saved any books yet. Start exploring to build your library!</string>
+    <string name="error_no_app_to_open_file">No compatible app found to open this file. Please install a reader for this format.</string>
 
 </resources>
