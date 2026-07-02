@@ -31,7 +31,7 @@ The project is structured following **Clean Architecture** principles to ensure 
 - **`book`**:
     - **`domain`**: Pure Kotlin layer containing business models (`Book`, `Author`), Use Cases (`DownloadBookUseCase`, `DeleteBookUseCase`), and Repository interfaces.
     - **`data`**: implementation of Repositories, Network data sources (Ktor), Local database (Room entities and DAOs), and Mappers to transform DTOs/Entities into Domain models.
-    - **`presentation`**: MVVM implementation using ViewModels, State-driven UI, and reusable Compose components.
+    - **`presentation`**: MVI implementation using ViewModels, State-driven UI, and reusable Compose components.
 - **`di`**: Centralized Koin modules for dependency management.
 
 ## 📦 Project Structure
