@@ -11,9 +11,7 @@ A professional Android application for discovering and downloading e-books, util
 - **Book Downloading**: Integrated file downloader using Ktor streaming to save books directly to device storage.
 - **Library Management**: Dedicated state tracking for downloaded books, allowing users to open or delete files.
 - **Offline-First**: Comprehensive caching system using Room database to ensure a seamless experience even without an internet connection.
-- **Responsive UI**: Built entirely with Jetpack Compose and Material 3, supporting adaptive layouts and Dark Mode.
 
-## 🛠 Tech Stack & Tools
 
 - **Language**: [Kotlin](https://kotlinlang.org/)
 - **UI**: [Jetpack Compose](https://developer.android.com/jetpack/compose) (Material 3)
