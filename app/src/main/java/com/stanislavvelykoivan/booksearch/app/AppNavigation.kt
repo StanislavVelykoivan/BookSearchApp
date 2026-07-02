@@ -22,60 +22,25 @@ import com.stanislavvelykoivan.booksearch.core.presentation.Surface
 
 @Composable
 fun AppNavigation(
-    navController: NavHostController,
-    modifier: Modifier
+    navController: NavHostController, modifier: Modifier
 ) {
     NavHost(
-        navController = navController,
-        startDestination = Route.SearchRoute,
-        modifier = modifier
+        navController = navController, startDestination = Route.SearchRoute, modifier = modifier
     ) {
         composable<Route.SearchRoute> {
-            var selectedBook by remember { mutableStateOf<Long?>(null) }
             BookSearchScreenRoot(
-                onBookClick = {id ->
-                    selectedBook = id
-                }
-            )
+                onBookClick = { id ->
+                    navController.navigate(Route.DetailRoute(bookId = id))
+                })
+        }
 
-            selectedBook?.let { bookId ->
-                Dialog(
-                    onDismissRequest = {
-                        selectedBook = null
-                    }
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(OnBackground)
-                    ){
-                        BookDetailScreenRoot (
-                            bookId = bookId,
-                            onBackClick = {
-                                selectedBook = null
-                            }
-                        )
-                    }
-                }
-            }
+        composable<Route.DetailRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.DetailRoute>()
+
+            BookDetailScreenRoot(
+                bookId = route.bookId, onBackClick = {
+                    navController.popBackStack()
+                })
         }
     }
 }
-//composable<Route.SearchRoute> {
-//            BookSearchScreenRoot(
-//                onBookClick = { id ->
-//                    navController.navigate(Route.DetailRoute(bookId = id))
-//                }
-//            )
-//        }
-//
-//        composable<Route.DetailRoute> { backStackEntry ->
-//            val route = backStackEntry.toRoute<Route.DetailRoute>()
-//
-//            BookDetailScreenRoot(
-//                bookId = route.bookId,
-//                onBackClick = {
-//                    navController.popBackStack()
-//                }
-//            )
-//        }
