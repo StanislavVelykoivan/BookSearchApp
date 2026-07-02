@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +47,6 @@ import com.stanislavvelykoivan.booksearch.book.presentation.book_search.componen
 import com.stanislavvelykoivan.booksearch.book.presentation.book_search.components.BookList
 import com.stanislavvelykoivan.booksearch.book.presentation.book_search.components.BookSearchBar
 import com.stanislavvelykoivan.booksearch.core.presentation.OnPrimary
-
 import com.stanislavvelykoivan.booksearch.core.presentation.Primary
 import com.stanislavvelykoivan.booksearch.core.presentation.Secondary
 import org.koin.androidx.compose.koinViewModel
@@ -86,12 +86,30 @@ fun BookSearchScreen(
     val sheetState = rememberModalBottomSheetState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state.searchResult) {
-        searchResultListState.animateScrollToItem(0)
+    val isItLastItem by remember {
+        derivedStateOf {
+            val layoutInfo = searchResultListState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+
+            if (visibleItems.isEmpty()){
+                false
+            }else{
+                visibleItems.last().index == layoutInfo.totalItemsCount - 1
+            }
+
+        }
     }
-    LaunchedEffect(state.onTabSelected) {
+
+    LaunchedEffect(isItLastItem) {
+        if (isItLastItem && !state.isLoading && !state.onNextLoading){
+            onAction(BookSearchAction.OnLoadNextPage)
+        }
+    }
+
+    LaunchedEffect(state.onTabSelected) { 34
         pagerState.animateScrollToPage(state.onTabSelected)
     }
+
     LaunchedEffect(pagerState.currentPage) {
         onAction(BookSearchAction.OnTabSelected(pagerState.currentPage))
     }
@@ -236,7 +254,8 @@ fun BookSearchScreen(
                                                         )
                                                     )
                                                 },
-                                                scrollState = searchResultListState
+                                                scrollState = searchResultListState,
+                                                isLoading = state.onNextLoading
                                             )
                                         }
 
@@ -293,5 +312,4 @@ fun BookSearchScreen(
             }
         }
     }
-
 }

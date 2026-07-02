@@ -8,16 +8,20 @@ import com.stanislavvelykoivan.booksearch.book.data.files.FileStorage
 import com.stanislavvelykoivan.booksearch.book.data.mappers.toAuthorEntity
 import com.stanislavvelykoivan.booksearch.book.data.mappers.toBook
 import com.stanislavvelykoivan.booksearch.book.data.mappers.toBookEntity
+import com.stanislavvelykoivan.booksearch.book.data.mappers.toBookSearch
 import com.stanislavvelykoivan.booksearch.book.data.mappers.toDomain
 import com.stanislavvelykoivan.booksearch.book.data.network.RemoteBookDataSource
 import com.stanislavvelykoivan.booksearch.book.domain.Book
 import com.stanislavvelykoivan.booksearch.book.domain.BookFile
 import com.stanislavvelykoivan.booksearch.book.domain.BookRepository
+import com.stanislavvelykoivan.booksearch.book.domain.BookSearch
 import com.stanislavvelykoivan.booksearch.core.domain.DataError
 import com.stanislavvelykoivan.booksearch.core.domain.Result
 import com.stanislavvelykoivan.booksearch.core.domain.map
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class DefaultBookRepository(
@@ -30,13 +34,21 @@ class DefaultBookRepository(
         query: String,
         languages: List<String>?,
         page: Int
-    ): Result<List<Book>, DataError.Remote> {
+    ): Result<BookSearch, DataError.Remote> {
         return remoteBookDataSource
             .searchBooks(query, languages, page)
             .map { dto ->
-                dto.results.map {
-                    it.toBook()
-                }
+                dto.toBookSearch()
+            }
+    }
+
+    override suspend fun nexBooks(
+        query: String
+    ): Result<BookSearch, DataError.Remote> {
+        return remoteBookDataSource
+            .loadNext(query)
+            .map { dto ->
+                dto.toBookSearch()
             }
     }
 
@@ -54,9 +66,21 @@ class DefaultBookRepository(
     }
 
 
-    override suspend fun saveBookToDatabase(book: Book) {
-        bookDao.saveEverything(book.toBookEntity(), book.authors.map { it.toAuthorEntity() })
-    }
+    override suspend fun saveBookToDatabase(book: Book): Result<Unit, DataError.Local> =
+        withContext(
+            Dispatchers.IO
+        ) {
+            try {
+                bookDao.saveEverything(
+                    book = book.toBookEntity(),
+                    authors = book.authors.map { it.toAuthorEntity() }
+                )
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                Log.d("DB", "Error in saving of the book - $e")
+                Result.Error(DataError.Local.UNKNOWN)
+            }
+        }
 
     override fun getSavedBooks(): Flow<List<Book>> {
         return bookDao.getSavedBooks().map { booksWithAuthors ->
@@ -71,28 +95,39 @@ class DefaultBookRepository(
     override suspend fun downloadFormat(
         bookId: Long,
         formatMimeType: String,
-        url: String
-    ): Result<String, DataError> {
+        url: String,
+        onProgress: (Float) -> Unit
+    ): Result<String, DataError> = withContext(Dispatchers.IO) {
         Log.d("DownloadDebug", "downloadFormat called for ID: $bookId, URL: $url")
 
         val extension = fileStorageManager.getExtensionFromMime(formatMimeType)
-        val targetFile = fileStorageManager.getFinalFile(fileStorageManager.getBaseFile(bookId), extension)
+        val targetFile = fileStorageManager.getFinalFile(
+            fileStorageManager.getBaseFile(bookId),
+            extension
+        )
 
         if (fileStorageManager.isBookDownloaded(bookId, extension)) {
             Log.d("DownloadDebug", "Book $bookId already exists at: ${targetFile.absolutePath}")
-            return Result.Success(targetFile.absolutePath)
+            onProgress(1f)
+            return@withContext Result.Success(targetFile.absolutePath)
         }
 
-
-        val downloadResult = remoteBookDataSource.downloadStreaming(url) { channel ->
-            fileStorageManager.saveChannelToFile(channel, targetFile)
+        val downloadResult = remoteBookDataSource.downloadStreaming(url) { channel, contentLength ->
+            fileStorageManager.saveChannelToFile(
+                channel = channel,
+                file = targetFile,
+                contentLength = contentLength,
+                onProgress = onProgress
+            )
         }
 
-        return when (downloadResult) {
+        return@withContext when (downloadResult) {
             is Result.Success -> {
                 Log.d("DownloadDebug", "File saved: ${targetFile.absolutePath}")
+                onProgress(1f)
                 Result.Success(targetFile.absolutePath)
             }
+
             is Result.Error -> {
                 Log.e("DownloadDebug", "Download or Save error: ${downloadResult.error}")
                 downloadResult
@@ -108,12 +143,28 @@ class DefaultBookRepository(
         return fileStorageManager.openFile(file)
     }
 
-    override suspend fun deleteBookFromDatabase(bookId: Long) {
-        bookDao.deleteBookAndCleanup(bookId)
+    override suspend fun deleteBookFromDatabase(bookId: Long): Result<Unit, DataError.Local> {
+        return try {
+            bookDao.deleteBookAndCleanup(bookId)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(DataError.Local.UNKNOWN)
+        }
+
     }
 
-    override suspend fun deleteBook(bookId: Long): Boolean {
-        return fileStorageManager.deleteBook(bookId)
+    override suspend fun deleteBook(bookId: Long): Result<Unit, DataError.Local> {
+        return try {
+            val success = fileStorageManager.deleteBook(bookId)
+
+            if (success) {
+                Result.Success(Unit)
+            } else {
+                Result.Error(DataError.Local.UNKNOWN)
+            }
+        } catch (e: Exception) {
+            Result.Error(DataError.Local.UNKNOWN)
+        }
     }
 
     override fun getLastSearchQuery(): Flow<List<String>> {

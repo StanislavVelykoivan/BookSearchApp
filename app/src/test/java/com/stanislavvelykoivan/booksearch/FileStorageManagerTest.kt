@@ -64,7 +64,7 @@ class FileStorageManagerTest {
 
     @Test
     fun `getExtensionFromMime returns correct extension for epub`() {
-        val mimeType = "application/epub+zip"
+        val mimeType = "application/epub+zip; fdsfdsfsdfdsf"
         val mockMimeMap = mockk<MimeTypeMap>()
 
         every { MimeTypeMap.getSingleton() } returns mockMimeMap
@@ -77,7 +77,7 @@ class FileStorageManagerTest {
 
     @Test
     fun `getExtensionFromMime returns bin for unknown mime`() {
-        val mimeType = "unknown/type"
+        val mimeType = "unknown/type; dfdfdsf"
         val mockMimeMap = mockk<MimeTypeMap>()
 
         every { MimeTypeMap.getSingleton() } returns mockMimeMap
@@ -194,7 +194,7 @@ class FileStorageManagerTest {
 
     @Test
     fun `saveChannelToFile returns Error and deletes file on exception`() = runTest {
-        val readOnlyFile = File("/proc/test_file")
+        val readOnlyFile = File("")
         val channel = ByteReadChannel("data".toByteArray())
 
         val result = fileStorageManager.saveChannelToFile(channel, readOnlyFile)

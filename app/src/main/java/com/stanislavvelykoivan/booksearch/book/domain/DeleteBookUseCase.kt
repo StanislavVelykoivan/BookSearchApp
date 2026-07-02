@@ -9,9 +9,14 @@ class DeleteBookUseCase(
 ) {
     suspend operator fun invoke(bookId: Long): Result<Unit, DataError.Local> {
 
-        bookRepository.deleteBook(bookId)
+        val resultFile = bookRepository.deleteBook(bookId)
 
-        bookRepository.deleteBookFromDatabase(bookId)
+        if (resultFile is Result.Error) return resultFile
+
+
+        val resultDb = bookRepository.deleteBookFromDatabase(bookId)
+
+        if (resultDb is Result.Error) return resultDb
 
         return Result.Success(Unit)
     }

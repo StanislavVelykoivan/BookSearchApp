@@ -11,7 +11,8 @@ data class BookSearchState (
     val isLoading: Boolean = false,
     val error: UiText? = null,
     val onTabSelected: Int = 0,
-    val page: Int = 1,
+    val next: String? = null,
+    val onNextLoading: Boolean = false,
     val isEndOfList: Boolean = false,
     val selectedLanguages: List<String> = emptyList()
 )

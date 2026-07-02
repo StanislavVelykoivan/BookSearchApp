@@ -1,5 +1,6 @@
 package com.stanislavvelykoivan.booksearch.book.domain
 
+import com.stanislavvelykoivan.booksearch.core.data.retry
 import com.stanislavvelykoivan.booksearch.core.domain.DataError
 import com.stanislavvelykoivan.booksearch.core.domain.Result
 
@@ -10,10 +11,26 @@ class DownloadBookUseCase(
     suspend operator fun invoke(
         book: Book,
         formatMimeType: String,
-        url: String
+        url: String,
+        onProgress: (Float) -> Unit
     ): Result<String, DataError> {
+        val dbResult = repository.saveBookToDatabase(book)
+        if (dbResult is Result.Error)
+            return dbResult
 
-        repository.saveBookToDatabase(book)
-        return repository.downloadFormat(book.id, formatMimeType, url)
+        val formatResult = retry {
+            repository.downloadFormat(
+                bookId = book.id,
+                formatMimeType = formatMimeType,
+                url = url,
+                onProgress = onProgress
+            )
+        }
+
+        if (formatResult is Result.Error){
+            repository.deleteBookFromDatabase(book.id)
+            return formatResult
+        }
+        return formatResult
     }
 }

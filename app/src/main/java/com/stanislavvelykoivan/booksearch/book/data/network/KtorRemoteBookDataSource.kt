@@ -12,8 +12,10 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
+import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
+import kotlin.coroutines.cancellation.CancellationException
 
 private const val BASE_URL = "https://gutendex.com"
 
@@ -28,7 +30,7 @@ class KtorRemoteBookDataSource(
     ): Result<BookSearchResponseDto, DataError.Remote> {
         return safeCall<BookSearchResponseDto> {
             httpClient.get(
-                "$BASE_URL/books"
+                "$BASE_URL/books/"
             ) {
                 accept(ContentType.Application.Json)
                 parameter("search", query)
@@ -40,10 +42,22 @@ class KtorRemoteBookDataSource(
         }
     }
 
+    override suspend fun loadNext(
+        query: String
+    ): Result<BookSearchResponseDto, DataError.Remote> {
+        return safeCall<BookSearchResponseDto> {
+            httpClient.get(
+                query
+            ) {
+                accept(ContentType.Application.Json)
+            }
+        }
+    }
+
     override suspend fun getBookById(bookId: Long): Result<BookSearchDto, DataError.Remote> {
         return safeCall<BookSearchDto> {
             httpClient.get(
-                "$BASE_URL/books/$bookId"
+                "$BASE_URL/books/$bookId/"
             ){
                 accept(ContentType.Application.Json)
             }
@@ -54,7 +68,10 @@ class KtorRemoteBookDataSource(
 
     override suspend fun downloadStreaming(
         url: String,
-        onChannelReady: suspend (ByteReadChannel) -> Result<Unit, DataError.Local>
+        onChannelReady: suspend (
+            ByteReadChannel,
+            Long?
+        ) -> Result<Unit, DataError.Local>
     ): Result<Unit, DataError> {
         return try {
             httpClient.prepareGet(url).execute { response ->
@@ -62,10 +79,13 @@ class KtorRemoteBookDataSource(
                     return@execute Result.Error(DataError.Remote.UNKNOWN)
                 }
 
+                val contentLength = response.contentLength()
                 val channel = response.bodyAsChannel()
 
-                onChannelReady(channel)
+                onChannelReady(channel, contentLength)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.Error(DataError.Remote.UNKNOWN)
         }

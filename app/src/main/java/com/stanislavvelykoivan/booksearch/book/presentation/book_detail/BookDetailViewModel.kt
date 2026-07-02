@@ -9,7 +9,9 @@ import com.stanislavvelykoivan.booksearch.book.domain.DownloadBookUseCase
 import com.stanislavvelykoivan.booksearch.core.domain.onError
 import com.stanislavvelykoivan.booksearch.core.domain.onSuccess
 import com.stanislavvelykoivan.booksearch.core.presentation.toUiText
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,6 +25,9 @@ class BookDetailViewModel(
     private val _state = MutableStateFlow(BookDetailState())
     val state = _state.asStateFlow()
 
+    private val _events = MutableSharedFlow<BookDetailEvent>()
+    val event = _events.asSharedFlow()
+
     init {
         val bookId = savedStateHandle.get<Long>("bookId")
         if (bookId != null) {
@@ -34,20 +39,32 @@ class BookDetailViewModel(
     fun onAction(action: BookDetailAction) {
         when (action) {
             is BookDetailAction.LoadBook -> {
-
+                loadBook(action.bookId)
             }
 
             is BookDetailAction.DownloadFormat -> {
                 val book = _state.value.book ?: return
 
                 viewModelScope.launch {
-                    _state.update { it.copy(isDownloading = true) }
+                    _state.update { it.copy(isDownloading = true, progression = 0f) }
 
-                    val result = downloadBookUseCase(book, action.formatMimeType, action.url)
+                    val result = downloadBookUseCase(
+                        book,
+                        action.formatMimeType,
+                        action.url,
+                        onProgress = { progress ->
+                            _state.update { it.copy(progression = progress) }
+                        })
 
                     result.onSuccess {
                         val getBookFiles = bookRepository.getBookFiles(book.id)
-                        _state.update { it.copy(isDownloading = false, files = getBookFiles, isBookSaved = true) }
+                        _state.update {
+                            it.copy(
+                                isDownloading = false,
+                                files = getBookFiles,
+                                isBookSaved = true
+                            )
+                        }
                     }.onError { error ->
                         _state.update { it.copy(isDownloading = false, error = error.toUiText()) }
                     }
@@ -57,6 +74,11 @@ class BookDetailViewModel(
             is BookDetailAction.OpenFile -> {
                 viewModelScope.launch {
                     bookRepository.openFile(action.file)
+                        .onError { error ->
+                            _events.emit(
+                                BookDetailEvent.ShowError(error.toUiText())
+                            )
+                        }
                 }
             }
 
@@ -121,13 +143,13 @@ class BookDetailViewModel(
 
     private fun loadBookFromNetwork(bookId: Long) {
         viewModelScope.launch {
-        _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true) }
             bookRepository.getBookById(bookId)
                 .onSuccess { book ->
-                    _state.value = _state.value.copy(book = book , isLoading = false)
+                    _state.update { it.copy(book = book, isLoading = false) }
                 }
                 .onError { error ->
-                    _state.value = _state.value.copy(error = error.toUiText(), isLoading = false)
+                    _state.update { it.copy(error = error.toUiText(), isLoading = false) }
                 }
         }
     }

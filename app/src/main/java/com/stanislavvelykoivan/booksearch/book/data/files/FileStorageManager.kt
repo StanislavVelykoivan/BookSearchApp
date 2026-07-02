@@ -14,6 +14,7 @@ import io.ktor.utils.io.readRemaining
 import kotlinx.io.readByteArray
 import java.io.File
 import com.stanislavvelykoivan.booksearch.core.domain.Result
+import io.ktor.utils.io.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -52,34 +53,53 @@ class FileStorageManager(private val context: Context):FileStorage {
 
     override suspend fun saveChannelToFile(
         channel: ByteReadChannel,
-        file: File
-    ): Result<Unit, DataError.Local> {
+        file: File,
+        contentLength: Long?,
+        onProgress: (Float) -> Unit
+    ): Result<Unit, DataError.Local> = withContext(Dispatchers.IO) {
+
         Log.d("FileStorage", "Starting to save data to: ${file.absolutePath}")
-        return try {
-            file.parentFile?.exists()?.let {
-                if (!it) {
-                    val created = file.parentFile?.mkdirs()
+
+        try {
+            file.parentFile?.let { parent ->
+                if (!parent.exists()) {
+                    val created = parent.mkdirs()
                     Log.d("FileStorage", "Directory created: $created")
                 }
             }
 
             file.outputStream().buffered().use { output ->
                 var totalBytes = 0L
+
                 while (!channel.isClosedForRead) {
                     val packet = channel.readRemaining(8192)
+
                     if (!packet.exhausted()) {
                         val bytes = packet.readByteArray()
                         output.write(bytes)
+
                         totalBytes += bytes.size
+
+                        if (contentLength != null && contentLength > 0){
+                            val progress = totalBytes.toFloat() / contentLength.toFloat()
+                            onProgress(progress.coerceIn(0f,1f))
+                        }
                     }
                 }
+
                 Log.d("FileStorage", "File save completed. Total bytes written: $totalBytes")
             }
 
+            onProgress(1f)
             Result.Success(Unit)
+
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("FileStorage", "Error occurred while saving file: ${e.message}", e)
+
             if (file.exists()) file.delete()
+
             Result.Error(DataError.Local.UNKNOWN)
         }
     }

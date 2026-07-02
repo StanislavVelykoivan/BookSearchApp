@@ -6,9 +6,19 @@ import com.stanislavvelykoivan.booksearch.book.domain.BookRepository
 import com.stanislavvelykoivan.booksearch.core.domain.onError
 import com.stanislavvelykoivan.booksearch.core.domain.onSuccess
 import com.stanislavvelykoivan.booksearch.core.presentation.toUiText
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -25,23 +35,22 @@ class BookSearchViewModel(
         observeSavedBooks()
         observeSearchHistory()
     }
+
     fun onAction(action: BookSearchAction) {
         when (action) {
             is BookSearchAction.OnQueryChange -> {
-                _state.update { it.copy(query = action.query, page = 1) }
+                _state.update { it.copy(query = action.query) }
             }
 
             is BookSearchAction.OnSearchClick -> {
-                _state.update { it.copy(page = 1) }
                 searchBooks(
                     query = _state.value.query,
-                    languages = _state.value.selectedLanguages,
-                    page = _state.value.page
+                    languages = _state.value.selectedLanguages
                 )
             }
 
             is BookSearchAction.OnLanguageFilterClick -> {
-                _state.update { it.copy(selectedLanguages = action.languages, page = 1) }
+                _state.update { it.copy(selectedLanguages = action.languages) }
             }
 
             is BookSearchAction.OnTabSelected -> {
@@ -49,12 +58,40 @@ class BookSearchViewModel(
             }
 
             is BookSearchAction.OnLoadNextPage -> {
-                _state.update { it.copy(page = it.page + 1) }
+                if (_state.value.isLoading || _state.value.next.isNullOrEmpty()) return
+                _state.update { it.copy(onNextLoading = true) }
+                nextBooks(_state.value.next!!)
+
             }
 
             is BookSearchAction.OnBookClick -> {}
 
 
+        }
+    }
+
+    private fun nextBooks(query: String) {
+        searchJob?.cancel()
+
+        searchJob = viewModelScope.launch {
+            bookRepository.nexBooks(query)
+                .onSuccess { nextBooks ->
+                    _state.update {
+                        it.copy(
+                            next = nextBooks.next,
+                            error = null,
+                            onNextLoading = false,
+                            searchResult = _state.value.searchResult + nextBooks.results
+                        )
+                    }
+                }
+                .onError {
+                    _state.update {
+                        it.copy(
+                            onNextLoading = false,
+                        )
+                    }
+                }
         }
     }
 
@@ -68,7 +105,7 @@ class BookSearchViewModel(
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(error = null, isLoading = true) }
 
             launch {
                 bookRepository.saveSearchQuery(trimmedQuery)
@@ -78,16 +115,18 @@ class BookSearchViewModel(
                 .onSuccess { searchResult ->
                     _state.update {
                         it.copy(
+                            next = searchResult.next,
                             isLoading = false,
                             error = null,
-                            searchResult = if (page == 1) searchResult else _state.value.searchResult + searchResult,
+                            onNextLoading = false,
+                            searchResult = searchResult.results,
                         )
                     }
                 }
                 .onError { error ->
                     _state.update {
                         it.copy(
-                            searchResult = emptyList(),
+                            onNextLoading = false,
                             isLoading = false,
                             error = error.toUiText()
                         )
@@ -110,6 +149,53 @@ class BookSearchViewModel(
                 _state.update { it.copy(searchHistory = history) }
             }
         }
+    }
+
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    private fun observeSearch() {
+        _state
+            .map { it.query.trim() }
+            .distinctUntilChanged()
+            .debounce(700)
+            .filter { it.length >= 2 }
+            .flatMapLatest { query ->
+                flow {
+                    _state.update {
+                        it.copy(
+                            error = null,
+                            isLoading = true
+                        )
+                    }
+                    
+
+                    val result = bookRepository.searchBooks(
+                        query = query,
+                        languages = _state.value.selectedLanguages
+                    )
+                    emit(result)
+                }
+            }
+            .onEach { result ->
+                result
+                    .onSuccess { books ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = null,
+                                searchResult = books.results
+                            )
+                        }
+                    }
+                    .onError { error ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = error.toUiText()
+                            )
+                        }
+                    }
+            }
+            .launchIn(viewModelScope)
     }
 }
 

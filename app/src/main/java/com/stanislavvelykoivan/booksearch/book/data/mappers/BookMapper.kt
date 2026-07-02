@@ -5,9 +5,11 @@ import com.stanislavvelykoivan.booksearch.book.data.database.entitys.AuthorEntit
 import com.stanislavvelykoivan.booksearch.book.data.database.entitys.BookEntity
 import com.stanislavvelykoivan.booksearch.book.data.database.entitys.SearchHistoryEntity
 import com.stanislavvelykoivan.booksearch.book.data.dto.BookSearchDto
+import com.stanislavvelykoivan.booksearch.book.data.dto.BookSearchResponseDto
 import com.stanislavvelykoivan.booksearch.book.data.dto.PersonDto
 import com.stanislavvelykoivan.booksearch.book.domain.Author
 import com.stanislavvelykoivan.booksearch.book.domain.Book
+import com.stanislavvelykoivan.booksearch.book.domain.BookSearch
 
 fun BookSearchDto.toBook(): Book {
     return Book(
@@ -82,3 +84,12 @@ fun String.toEntity(): SearchHistoryEntity = SearchHistoryEntity(
     searchQuery = this,
     lastSearchedAt = System.currentTimeMillis()
 )
+
+fun BookSearchResponseDto.toBookSearch(): BookSearch{
+    return BookSearch(
+        count = count,
+        next = next,
+        previous = previous,
+        results = results.map { it.toBook() }
+    )
+}

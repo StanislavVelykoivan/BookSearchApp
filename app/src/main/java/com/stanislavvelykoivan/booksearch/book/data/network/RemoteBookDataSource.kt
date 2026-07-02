@@ -15,8 +15,11 @@ interface RemoteBookDataSource {
 
     suspend fun getBookById(bookId: Long): Result<BookSearchDto, DataError.Remote>
 
+
+
+    suspend fun loadNext(query: String): Result<BookSearchResponseDto, DataError.Remote>
     suspend fun downloadStreaming(
         url: String,
-        onChannelReady: suspend (ByteReadChannel) -> Result<Unit, DataError.Local>
+        onChannelReady: suspend (ByteReadChannel, Long?) -> Result<Unit, DataError.Local>
     ): Result<Unit, DataError>
 }

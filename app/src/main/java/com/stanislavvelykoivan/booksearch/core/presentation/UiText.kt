@@ -1,5 +1,6 @@
 package com.stanislavvelykoivan.booksearch.core.presentation
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 
@@ -15,6 +16,12 @@ sealed interface UiText {
         return when(this) {
             is DynamicString -> value
             is StringResourceId -> stringResource(id = id, formatArgs = args)
+        }
+    }
+    fun asString(context: Context): String {
+        return when (this) {
+            is DynamicString -> value
+            is StringResourceId -> context.getString(id, *args)
         }
     }
 }

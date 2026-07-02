@@ -9,6 +9,7 @@ data class BookDetailState(
     val isDownloading: Boolean = false,
     val isLoading: Boolean = false,
     val error: UiText? = null,
+    val progression: Float = 0f,
     val files: List<BookFile> = emptyList(),
     val isBookSaved: Boolean = false
 )

@@ -10,26 +10,29 @@ interface BookRepository {
         query: String,
         languages: List<String>? = null,
         page: Int = 1
-    ): Result<List<Book>, DataError.Remote>
+    ): Result<BookSearch, DataError.Remote>
 
     suspend fun getBookById(bookId: Long): Result<Book, DataError.Remote>
     fun isBookSaved(bookId: Long): Flow<Boolean>
 
-    suspend fun saveBookToDatabase(book: Book)
+    suspend fun saveBookToDatabase(book: Book): Result<Unit, DataError.Local>
 
-    fun getSavedBooks(): Flow<List<Book>>
-    suspend fun downloadFormat(
-        bookId: Long,
-        formatMimeType: String,
-        url: String
-    ): Result<String, DataError>
 
     suspend fun getBookFromDatabase(bookId: Long): Book?
     suspend fun getBookFiles(bookId: Long): List<BookFile>
     suspend fun openFile(file: File): Result<Unit, DataError.Local>
-    suspend fun deleteBookFromDatabase(bookId: Long)
-    suspend fun deleteBook(bookId: Long): Boolean
+    suspend fun deleteBookFromDatabase(bookId: Long): Result<Unit, DataError.Local>
+    suspend fun deleteBook(bookId: Long): Result<Unit, DataError.Local>
 
     fun getLastSearchQuery(): Flow<List<String>>
     suspend fun saveSearchQuery(query: String)
+    suspend fun nexBooks(query: String): Result<BookSearch, DataError.Remote>
+    suspend fun downloadFormat(
+        bookId: Long,
+        formatMimeType: String,
+        url: String,
+        onProgress: (Float) -> Unit
+    ): Result<String, DataError>
+
+    fun getSavedBooks(): Flow<List<Book>>
 }

@@ -13,9 +13,14 @@ interface FileStorage {
     suspend fun deleteBook(bookId: Long): Boolean
     fun getFinalFile(baseFile: File, extension: String): File
     suspend fun isBookDownloaded(bookId: Long, extension: String): Boolean
-    suspend fun saveChannelToFile(channel: ByteReadChannel, file: File): Result<Unit, DataError.Local>
     suspend fun getExistingFile(bookId: Long): File?
     suspend fun getAvailableFilesForBook(bookId: Long): List<BookFile>
 
     suspend fun openFile(file: File): Result<Unit, DataError.Local>
+    suspend fun saveChannelToFile(
+        channel: ByteReadChannel,
+        file: File,
+        contentLength: Long?,
+        onProgress: (Float) -> Unit
+    ): Result<Unit, DataError.Local>
 }

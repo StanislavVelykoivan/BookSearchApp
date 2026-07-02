@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownload
@@ -26,12 +27,18 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,16 +62,53 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun BookDetailScreenRoot(
-    bookId: Long, viewModel: BookDetailViewModel = koinViewModel(), modifier: Modifier = Modifier
+    bookId: Long,
+    viewModel: BookDetailViewModel = koinViewModel(),
+    modifier: Modifier = Modifier,
+    onBackClick: () -> Unit,
 ) {
 
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
-    BookDetailScreen(
-        bookId = bookId, state = state, onAction = { action ->
-            viewModel.onAction(action)
-        }, modifier = modifier
-    )
+
+
+
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when (event) {
+                is BookDetailEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message.asString(context)
+                    )
+                }
+
+
+                is BookDetailEvent.ShowMessage -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message.asString(context)
+                    )
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    ) { paddingValues ->
+        BookDetailScreen(
+            bookId = bookId,
+            state = state,
+            onAction = { action ->
+                viewModel.onAction(action)
+            },
+            onBackClick = onBackClick,
+            modifier = modifier.padding(paddingValues)
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,11 +117,16 @@ fun BookDetailScreen(
     bookId: Long,
     state: BookDetailState,
     onAction: (BookDetailAction) -> Unit,
+    onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+
+    LaunchedEffect(bookId) {
+        onAction(BookDetailAction.LoadBook(bookId))
+    }
 
     Box(
         modifier = modifier
@@ -84,6 +134,8 @@ fun BookDetailScreen(
             .background(OnBackground),
         contentAlignment = Alignment.Center,
     ) {
+
+
         when {
             state.isLoading -> {
                 CircularProgressIndicator()
@@ -116,6 +168,19 @@ fun BookDetailScreen(
                         .padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        IconButton(
+                            onClick = onBackClick
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                                contentDescription = null
+                            )
+                        }
+                    }
                     Text(
                         text = state.book.title,
                         style = MaterialTheme.typography.headlineMedium,
@@ -220,6 +285,27 @@ fun BookDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    if (state.isDownloading) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { state.progression },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Downloading ${(state.progression * 100).toInt()}%",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
 
                     Button(
                         onClick = { showBottomSheet = true },
